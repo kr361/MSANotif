@@ -17,24 +17,14 @@ namespace NotificationSignalR.Hubs
     public class NotificationHub : Microsoft.AspNet.SignalR.Hub
     {
         public readonly static ConnectionMapping<string> _connections =
-            new ConnectionMapping<string>();
+            new ConnectionMapping<string>(); // stores a list of connection strings for each user
 
         public readonly static Dictionary<string, int> userList = new Dictionary<string, int>();
-
-        public void SendMessageOnChat(string users, string message)
-        {
-            string[] userids = new JavaScriptSerializer().Deserialize<string[]>(users);
-
-            foreach (string s in userids)
-            {
-                foreach (var connectionId in _connections.GetConnections(s))
-                {
-                    Clients.Client(connectionId).addMessageToUser(message);
-                }
-            }
-
-        }
+        // stores UserID + Username
         
+
+
+        // Send NotificationAPI 'isRead = false'
         public void readMessage(int NotificationId)
         {
             string userid = Context.Request.Cookies["userid"].Value;
@@ -55,6 +45,9 @@ namespace NotificationSignalR.Hubs
 
         }
 
+
+
+        // Get all pending notification on page load
         public void getUnreadMessages(string userid)
         {
 
@@ -75,14 +68,15 @@ namespace NotificationSignalR.Hubs
                 reader.Close();
                 stream.Close();
 
+
+                // Parse input json string to notification list
                 List<Notification> msgs = new JavaScriptSerializer().Deserialize<List<Notification>>(data);
 
+
+                //send unread notification to clients.
                 foreach(Notification s in msgs)
                 {
-                    foreach(var conId in _connections.GetConnections(username))
-                    {
-                        Clients.Client(conId).addMessagetouser(s.NotificationID, s.Message);
-                    }
+                    Clients.Client(Context.ConnectionId).addMessagetouser(s.NotificationID, s.Message);
                 }
 
             } catch (WebException)
@@ -96,6 +90,7 @@ namespace NotificationSignalR.Hubs
         {
             string username = Context.RequestCookies["username"].Value;
 
+            // add connection string to dictionary
             _connections.Add(username, Context.ConnectionId);
                   
             return base.OnConnected();
@@ -125,6 +120,9 @@ namespace NotificationSignalR.Hubs
         }
     }
 
+
+
+    // Implementation of connection-username mapping
     public class ConnectionMapping<T>
     {
         private readonly Dictionary<T, HashSet<string>> _connections =

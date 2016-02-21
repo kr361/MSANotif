@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Entity;
 using System.Linq;
 using System.Web;
@@ -20,5 +21,8 @@ namespace NotificationHubAPI.Models
         }
 
         public System.Data.Entity.DbSet<NotificationHubAPI.Models.Notification> Notifications { get; set; }
+
+        
+
     }
 }

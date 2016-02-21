@@ -21,10 +21,9 @@ namespace NotificationDbAPI.Models
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
+            // set UserID and NotificationID as composite PK for UserNotification
             modelBuilder.Entity<UserNotification>()
                 .HasKey(un => new { un.UserID, un.NotificationID });
-
-
             base.OnModelCreating(modelBuilder);
         }
 

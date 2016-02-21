@@ -26,8 +26,10 @@ namespace NotificationDbAPI.Controllers
         [ResponseType(typeof(UserNotification))]
         public IHttpActionResult GetUserNotification(int id)
         {
+            //Find (userNotification == input id)
             var userNotification = from b in db.UserNotifications
                                    where b.UserID == id
+                                   where b.IsRead == false
                                    select b;
             if (userNotification == null)
             {
@@ -37,22 +39,22 @@ namespace NotificationDbAPI.Controllers
             {
                 List<Notification> nlist = new List<Notification>();
 
-                foreach (UserNotification s in userNotification)
+                //Find (notification == userNotification.id)
+                foreach(UserNotification s in userNotification)
                 {
                     var notif = db.Notifications
                         .Where(n => n.NotificationID == s.NotificationID)
                         .FirstOrDefault();
-                    if (notif != null)
-                        nlist.Add(notif);
+
+                    nlist.Add(notif);
                 }
-                if (nlist.Count < 1)
+
+                if(nlist.Count < 1)
                 {
                     return NotFound();
                 }
-                else
-                {
-                    return Ok(nlist);
-                }
+
+                return Ok(nlist);
             }
         }
 

@@ -74,32 +74,41 @@ namespace NotificationDbAPI.Controllers
 
         // POST: api/Notifications
         [ResponseType(typeof(Notification))]
-        public IHttpActionResult PostNotification(Notification notification)
+        public IHttpActionResult PostNotification(string message, DateTime notificationdt, string rawId)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            string[] userids = notification.UserID.Split(',');
+            // Insert new notification to db
+            var newNotification = new Notification { Message = message, NotificationTime = notificationdt, UserID = rawId };
+            db.Notifications.Add(newNotification);
+            db.SaveChanges();
+
+
+           int notificationid = newNotification.NotificationID; // new notification ID
+
+
+
+            string[] userids = rawId.Split(','); // Get a list of userids from userid<string>
             List<User> users = new List<User>();
 
+            // update UserNotification entries for each userid
             foreach (string s in userids)
             {
-                int userid  = int.Parse(s);
+                int userid = int.Parse(s);
                 var username = db.Users.Find(userid).Username;
                 User user = new Models.User { UserID = int.Parse(s), Username = username };
                 users.Add(user);
 
-                UserNotification un = new UserNotification { UserID = int.Parse(s), NotificationID = notification.NotificationID, IsRead = false };
+                UserNotification un = new UserNotification { UserID = int.Parse(s), NotificationID = notificationid, IsRead = false };
                 db.UserNotifications.Add(un);
             }
-            
-            db.Notifications.Add(notification);
             db.SaveChanges();
-            
 
-            string URI = "http://localhost:62433/api/Notifications";
+            //Send Http Post to Notification Hub
+            string URI = "http://localhost:62433/api/Notifications/" + notificationid;
 
 
             var httpWebRequest = (HttpWebRequest)WebRequest.Create(URI);
@@ -108,10 +117,13 @@ namespace NotificationDbAPI.Controllers
 
             using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
             {
+
+
                 string json = new JavaScriptSerializer().Serialize(new
                 {
-                    ID = notification.NotificationID,
-                    Message = notification.Message,
+                    NotificationID = notificationid,
+                    Message = message,
+                    NotificationTime = notificationdt,
                     Users = users
                 });
 
@@ -128,7 +140,7 @@ namespace NotificationDbAPI.Controllers
                 var result = streamReader.ReadToEnd();
             }
 
-            return CreatedAtRoute("DefaultApi", new { id = notification.NotificationID }, notification);
+            return CreatedAtRoute("DefaultApi", new { id = notificationid }, newNotification);
         }
 
         // DELETE: api/Notifications/5

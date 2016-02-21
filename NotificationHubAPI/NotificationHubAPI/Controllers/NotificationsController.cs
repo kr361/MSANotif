@@ -74,17 +74,18 @@ namespace NotificationHubAPI.Controllers
 
         // POST: api/Notifications
         [ResponseType(typeof(Notification))]
-        public IHttpActionResult PostNotification(Notification notification)
+        public IHttpActionResult PostNotification(int id, Notification notification)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
-
-         //   db.Notifications.Add(notification);
-         //   db.SaveChanges();
+            
+            // connect this controller with notification hub
             var _context = GlobalHost.ConnectionManager.GetHubContext<NotificationHub>();
             
+
+            //Add new notification to target users
             using(var userenum = notification.Users.GetEnumerator())
             {
                 while(userenum.MoveNext())
@@ -97,12 +98,12 @@ namespace NotificationHubAPI.Controllers
                     var target = NotificationHub._connections.GetConnections(username);
                     foreach (string connectionIds in target)
                     {
-                        _context.Clients.Client(connectionIds).addmessagetouser(notification.NotificationID, notification.Message);
+                        _context.Clients.Client(connectionIds).addmessagetouser(id, notification.Message, false);
                     }
                 }
             }
 
-            return CreatedAtRoute("DefaultApi", new { id = notification.NotificationID }, notification);
+            return CreatedAtRoute("DefaultApi", new { id = id }, notification);
         }
 
         // DELETE: api/Notifications/5
