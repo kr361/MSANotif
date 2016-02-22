@@ -1,0 +1,29 @@
+{
+  "siteName": {
+    "value": "FiedFiperClient"
+  },
+  "hostingPlanName": {
+    "value": "NotificationAPI"
+  },
+  "siteLocation": {
+    "value": "Australia Southeast"
+  },
+  "sku": {
+    "value": "Free"
+  },
+  "workerSize": {
+    "value": "0"
+  },
+  "siteMode": {
+    "value": "Limited"
+  },
+  "computeMode": {
+    "value": "0"
+  },
+  "subscriptionId": {
+    "value": "9e9ed751-48d4-41de-9534-e72684cc0ce5"
+  },
+  "resourceGroup": {
+    "value": "Default"
+  }
+}

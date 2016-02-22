@@ -1,0 +1,119 @@
+﻿@{
+    ViewBag.Title = "Home Page";
+}
+
+
+<h2>User</h2>
+
+<div class="customcontainer">
+    <div id="idpanel"></div> <span id="popupmsg"></span>
+    <input type="hidden" id="userid" />
+    <br />
+    <div class="balloon">
+        <input type="button" id="pressme" value="Press Me!" /> <span id="counter">0</span>
+    </div>
+    <br />
+    <br />
+    <div id="notiflistheader">Notification</div>
+    <ul id="notiflist">
+    </ul>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/jquery-1.10.2.min.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.2.0.min.js"></script>
+    <script src="http://localhost:62433/signalr/hubs"></script> 
+    <link href="~/CSS/style.css" rel="stylesheet" />
+    <script>
+        $(function () {    
+
+            // create a proxy to make a connection to notification hub
+            $.connection.hub.url = "http://localhost:62433/signalr"; 
+            var nhub = $.connection.notificationHub;
+
+
+            // Get username from cookie
+            var username = "@ViewBag.username";
+
+            document.getElementById("idpanel").innerHTML = username;
+
+            nhub.client.syncClientStatus = function (id) {
+                document.getElementById(id).style.backgroundColor = "#f8f8f8";
+                var total = document.getElementById("counter").innerHTML;
+                total = parseInt(total, 10) - 1; // decrement counter everytime user clicks on messages.
+                if (total == 0) {
+                    $('#counter').hide();
+                } else {
+                    document.getElementById("counter").innerHTML = total;
+                }
+            }
+
+            // Add message to notification list.
+            nhub.client.addmessagetouser = function (id, message, isRead) {
+
+                var anchor = document.createElement("a");
+                var newli = document.createElement("li");
+                var msgtxt = document.createTextNode(message);
+
+
+                anchor.appendChild(msgtxt);
+                anchor.id = id;
+                if (isRead == false) {
+                    anchor.style.backgroundColor = "yellow"; // if the message is still pending, set background colour to yellow.
+                    var total = document.getElementById("counter").innerHTML;
+                    total = parseInt(total, 10) + 1; // increment counter 
+                    document.getElementById("counter").innerHTML = total;
+                }
+                anchor.onclick = function () { // if user clicks on the message
+                    nhub.server.readMessage(this.id); // send notification id to the hub.
+                    return false;
+                }
+
+
+                newli.appendChild(anchor);
+
+                $('#notiflist').prepend(newli);
+
+                var total = document.getElementById("counter").innerHTML;
+                total = parseInt(total, 10);
+                if(total > 0)
+                    $('#counter').show(); // display counter when new message arrives.
+               
+                
+
+                // display popup notification
+                $("#popupmsg").html(message);
+                $("#popupmsg").slideDown(2000);
+                setTimeout('$("#popupmsg").slideUp(2000);', 2000);
+            }
+
+
+            // onConnnected
+            $.connection.hub.start().done(function () {
+
+                $('#popupmsg').hide();
+                $('#counter').hide();
+                $('#notiflist').hide();
+                
+                nhub.server.getUnreadMessages("@ViewBag.userid"); // get all pending messages
+
+                var myClientId = $.connection.hub.id;
+
+                $('#pressme').click(function () {
+                    if ($('#notiflist').is(":visible")) {
+                        $('#notiflist').toggle(200);
+                    } else {
+                        $('#notiflist').toggle(200);
+                        
+                    }
+
+                });
+            });
+        });
+
+        function htmlEncode(value) { //function to help encoding values.
+            var encodedValue = $('<div />').text(value).html();
+            return encodedValue;
+        }
+    </script>
+}
