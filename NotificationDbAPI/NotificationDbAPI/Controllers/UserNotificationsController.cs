@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Description;
 using NotificationDbAPI.Models;
+using Newtonsoft.Json;
 
 namespace NotificationDbAPI.Controllers
 {
@@ -29,7 +30,6 @@ namespace NotificationDbAPI.Controllers
             //Find (userNotification == input id)
             var userNotification = from b in db.UserNotifications
                                    where b.UserID == id
-                                   where b.IsRead == false
                                    select b;
             if (userNotification == null)
             {
@@ -37,7 +37,7 @@ namespace NotificationDbAPI.Controllers
             }
             else
             {
-                List<Notification> nlist = new List<Notification>();
+                List<string> nlist = new List<string>();
 
                 //Find (notification == userNotification.id)
                 foreach(UserNotification s in userNotification)
@@ -46,7 +46,13 @@ namespace NotificationDbAPI.Controllers
                         .Where(n => n.NotificationID == s.NotificationID)
                         .FirstOrDefault();
 
-                    nlist.Add(notif);
+                    nlist.Add(JsonConvert.SerializeObject(new
+                    {
+                        NotificationID = s.NotificationID,
+                        Message = notif.Message,
+                        NotificationDt = notif.NotificationTime,
+                        IsRead = s.IsRead
+                    }));
                 }
 
                 if(nlist.Count < 1)

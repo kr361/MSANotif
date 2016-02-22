@@ -10,6 +10,7 @@ using System.Net;
 using System.IO;
 using System.Web.Http.Cors;
 using NotificationHubAPI.Models;
+using Newtonsoft.Json;
 
 namespace NotificationSignalR.Hubs
 {
@@ -28,6 +29,7 @@ namespace NotificationSignalR.Hubs
         public void readMessage(int NotificationId)
         {
             string userid = Context.Request.Cookies["userid"].Value;
+            string username = Context.RequestCookies["username"].Value;
 
             var request = (HttpWebRequest)WebRequest.Create("http://localhost:52287/api/UserNotifications?userid=" 
                                                             + userid + "&notificationid=" + NotificationId);
@@ -43,6 +45,10 @@ namespace NotificationSignalR.Hubs
 
             HttpWebResponse response = (HttpWebResponse)request.GetResponse();
 
+            foreach (var connectionId in _connections.GetConnections(username))
+            {
+                Clients.Client(connectionId).syncClientStatus(NotificationId);
+            }
         }
 
 
@@ -70,13 +76,32 @@ namespace NotificationSignalR.Hubs
 
 
                 // Parse input json string to notification list
-                List<Notification> msgs = new JavaScriptSerializer().Deserialize<List<Notification>>(data);
+                List<string> msgs = new JavaScriptSerializer().Deserialize<List<string>>(data);
 
+                List<Tuple<dynamic, dynamic, dynamic>> uncheckedMsg = new List<Tuple<dynamic, dynamic, dynamic>>();
 
                 //send unread notification to clients.
-                foreach(Notification s in msgs)
+                foreach(string s in msgs)
                 {
-                    Clients.Client(Context.ConnectionId).addMessagetouser(s.NotificationID, s.Message);
+                    dynamic curr = JsonConvert.DeserializeObject(s);
+
+                    if (curr.IsRead == true)
+                    {
+                        Clients.Client(Context.ConnectionId).addMessagetouser(curr.NotificationID, curr.Message, curr.IsRead);
+                    }
+                    else {
+                        uncheckedMsg.Add(new Tuple<dynamic, dynamic, dynamic>(curr.NotificationID, curr.Message, curr.IsRead));
+                    }
+                }
+
+                if(uncheckedMsg.Count > 0)
+                {
+                    foreach(Tuple<dynamic, dynamic, dynamic> t in uncheckedMsg)
+                    {
+                        Clients.Client(Context.ConnectionId).addMessagetouser(t.Item1, t.Item2, t.Item3);
+                    }
+
+                    
                 }
 
             } catch (WebException)
